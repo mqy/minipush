@@ -1,0 +1,170 @@
+syntax = "proto3";
+package minipush;
+option go_package = "github.com/mqy/minipush/proto";
+
+// data structures for event calls through websocket.
+
+message Error {
+  int32 code = 1;
+  repeated string params = 2;
+  ClientMsg req = 3;
+}
+
+message Event {
+  int32 uid = 1;
+  int32 seq = 2;
+
+  // event create time (from business server), unix timestamp seconds.
+  int64 create_time = 3;
+  // json format message
+  string payload = 4;
+  // true: read, false: unread
+  bool read_state = 5;
+}
+
+// server sid event config.
+message WsConf {
+  // the max TTL of any events in backend store.
+  int32 event_ttl_days = 1;
+  int32 get_events_limit = 2;
+  bool enable_client_msg = 3;
+  int32 max_msg_size = 4; // 4096 bytes
+}
+
+// get events request. to_seq - to_seq must < Config.get_events_limit
+message GetEventsReq {
+  int32 from_seq = 1;  // inclusive
+  int32 to_seq = 2;    // inclusive
+}
+
+message GetEventsResp {
+  // actual events returned from server, order by seq DESC.
+  repeated Event events = 2;
+}
+
+// stat events request.
+message StatsReq {
+  // optional count unread events.
+  bool count_unread = 1;
+}
+
+message StatsResp {
+  WsConf conf = 1;
+  int32 head_seq = 2;
+  // valid only if `StatsReq.count_unread` is true
+  int32 unread_count = 3;
+}
+
+// Get read states request.
+message GetReadStatesReq {
+  // get read states of events with seq <= this value.
+  int32 head_seq = 1;
+}
+
+message GetReadStatesResp {
+  message Block {
+    // the beginning(max) sequence in the block.
+    int32 seq = 1;
+
+    // length of raw(un-encoded) read states bool array.
+    int32 len = 2;
+
+    // encoded read states:
+    // bool array -> byte array (BIG endian) -> standard base64.
+    // order by seq DESC.
+    string base64 = 3;
+  }
+
+  repeated Block blocks = 1;
+}
+
+// SetReadReq sets given event's state as `read`.
+message SetReadReq {
+  // sequence
+  int32 seq = 1;
+}
+
+message SetReadResp {
+  // sequence
+  int32 seq = 1;
+  // true means the event was updated from unread to read.
+  bool changed = 2;
+}
+
+// ClientMsg is the message from websocket client.
+// Must set one of the fields.
+message ClientMsg {
+  StatsReq stats = 1;
+  GetEventsReq get_events = 2;
+  SetReadReq set_read = 3;
+  GetReadStatesReq get_read_states = 4;
+  E2eMsg im = 5;
+}
+
+// ServerMsg is the message from websocket server.
+// Must set one of the fields.
+message ServerMsg {
+  Error error = 1;
+  int32 head_seq = 2;
+  bool kickoff = 3;
+  StatsResp stats = 4;
+  GetEventsResp get_events = 5;
+  GetReadStatesResp get_read_states = 6;
+  SetReadResp set_read = 7;
+}
+
+// data structures and service for push sequence and route session kickoff.
+
+// Session is a memory user session.
+message Session {
+  // hub id, new UUID on start.
+  string hub_id = 1;
+  // user id
+  int32 uid = 2;
+  // session id
+  string sid = 3;
+  // client ip
+  string ip = 4;
+  // create time (unix timestamp)
+  int64 create_time = 5;
+  // kickoff time
+  int64 kickoff_time = 6;
+}
+
+// End to end message: server -> user, user -> server -> user.
+message E2eMsg {
+  string type = 1; // business type for push.
+  int32 from = 2; // from uid, optional
+  repeated int32 to = 3; // to uids.
+  map<string, string> props = 4;
+  string body = 5;
+}
+
+// FollowerMsg is the message sent from cluster follower to cluster leader.
+message FollowerMsg {
+  // an online session.
+  Session session_online = 1;
+  // sid of an offline session.
+  string session_offline = 2;
+  // sync to leader
+  repeated Session sync_sessions = 3;
+  // this follower is shutting down.
+  bool server_shutdown = 4;
+  // e2e im message.
+  E2eMsg e2e_msg = 5;  
+}
+
+// LeaderMsg is the message sent from cluster leader to cluster follower.
+message LeaderMsg {
+  // map from uid to head sequence, leader -> followers -> users.
+  map<int32, int32> head_seq = 1;
+  // session ids to kickoff.
+  repeated string kickoff = 2;
+  // leader is shutting down.
+  bool server_shutdown = 3;
+}
+
+// MiniPushCluster serves leader-followers bi-directional communications.
+service MiniPushCluster {
+  rpc Route(stream FollowerMsg) returns (stream LeaderMsg) {}
+}

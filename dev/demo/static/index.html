@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Demo Push Client</title>
+    <link rel="stylesheet" href="index.css?v=1" />
+    <script type="text/javascript" src="index.js?v=2"></script>
+  </head>
+
+  <body>
+    <div style="display: block">
+      <div id="loginDiv" style="display: block">
+        <form onsubmit="login(); return false;">
+          Choose user:<br />
+          <radio-group>
+            <input type="radio" name="uid" id="uid1" value="1" /><label
+              for="uid1"
+              >user 1</label
+            ><br />
+            <input type="radio" name="uid" id="uid2" value="2" /><label
+              for="uid2"
+              >user 2</label
+            >
+          </radio-group>
+          <br />
+          <button type="submit">submit</button>
+        </form>
+      </div>
+      <div id="dataDiv" style="display: none">
+        <div id="e2eDiv" style="display: block">
+          <form onsubmit="sendIm(); return false;">
+            Choose recipient:<br />
+            <radio-group>
+              <input type="radio" name="e2e-uid" id="e2e-uid1" value="1" /><label
+                for="e2e-uid1"
+                >user 1</label
+              ><br />
+              <input type="radio" name="e2e-uid" id="e2e-uid2" value="2" /><label
+                for="e2e-uid2"
+                >user 2</label
+              >
+            </radio-group>
+            <br />
+            <input type="text" id="e2eText">
+            <button type="submit">submit</button>
+          </form>
+        </div>
+        <div id="info"></div>
+        <hr />
+        <div>
+          <button style="display: inline" onclick="requestStats()">
+            Stats
+          </button>
+          <button style="display: inline" onclick="requestGetReadStates()">
+            GetReadStates
+          </button>
+        </div>
+        <hr />
+        <div events>Latest recent events (at most 10):</div>
+        <table id="eventListTable" style="border: 1"></table>
+      </div>
+    </div>
+  </body>
+</html>

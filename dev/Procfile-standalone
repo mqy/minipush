@@ -1,0 +1,4 @@
+# standalone server. no way to add other nodes.
+
+demo: ./bin/demo-event-producer --kafka-endpoints=127.0.0.1:9092
+mp: ./bin/minipush --standalone --session-quota=2 --enable-demo --logtostderr --v 5 --addr=127.0.0.1:8001 --pid-file=bin/mp.pid

@@ -1,0 +1,6 @@
+# three nodes cluster. it's possible to add remove follower nodes.
+
+demo: ./bin/demo-event-producer --kafka-endpoints=127.0.0.1:9092 --ticker-duration=10s
+1: ./bin/minipush --session-quota=2 --enable-demo --logtostderr --v 5 --addr=127.0.0.1:8001 --pid-file=bin/1.pid --standalone=false --leader --follower
+2: ./bin/minipush --session-quota=2 --enable-demo --logtostderr --v 5 --addr=127.0.0.1:8002 --pid-file=bin/2.pid --standalone=false --follower --join=127.0.0.1:8001 
+3: ./bin/minipush --session-quota=2 --enable-demo --logtostderr --v 5 --addr=127.0.0.1:8003 --pid-file=bin/3.pid --standalone=false --follower --join=127.0.0.1:8001 

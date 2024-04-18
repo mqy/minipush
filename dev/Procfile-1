@@ -1,0 +1,4 @@
+# one node cluster. it's possible to add other nodes without stopping this node.
+
+demo: ./bin/demo-event-producer --kafka-endpoints=127.0.0.1:9092
+1: ./bin/minipush --session-quota=2 --enable-demo --logtostderr --v 5 --addr=127.0.0.1:8001 --standalone=false --leader --follower --pid-file=bin/1.pid
